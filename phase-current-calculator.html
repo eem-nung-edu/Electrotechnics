@@ -2,7 +2,7 @@
 <html lang="uk"> 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 
   
@@ -64,7 +64,9 @@
   
 <style>
 /* General styles */
-
+html {
+    height: -webkit-fill-available;
+}
 
 body {
     margin: 0;
@@ -76,6 +78,10 @@ body {
     display: flex; /* For pinning the footer, if it exists */
     flex-direction: column;
     min-height: 100vh;
+    /* Mobile Safari-specific fix */
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
 }
 
 * {
@@ -100,9 +106,9 @@ hr {
 /* Application container */
 #app-container {
     display: flex;
-    flex-grow: 1;
+    flex: 1;
     width: 100%;
-    overflow: hidden; /* Prevent horizontal scrolling */
+    overflow: hidden;
 }
 
 /* Information panel */
@@ -113,6 +119,14 @@ hr {
     border-right: 2px solid #ccc; /* Separator in horizontal mode */
     flex-shrink: 0; /* Do not shrink the panel */
     -webkit-overflow-scrolling: touch;
+
+
+    flex: 0 0 auto; /* Don't force a specific height */
+    /* Account for safe areas */
+    padding-left: max(15px, env(safe-area-inset-left));
+    padding-right: 15px;
+    padding-top: max(15px, env(safe-area-inset-top));
+    padding-bottom: max(15px, env(safe-area-inset-bottom));
 }
 
 /* Graph panel */
@@ -125,15 +139,23 @@ hr {
     min-width: 0; /* Allows the panel to shrink */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+
+   /* Account for safe areas */
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-left: 10px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+
 }
 
 #canvas-container {
-    flex-grow: 1; /* Canvas occupies available space */
-    position: relative; /* For positioning the canvas, if necessary */
-    min-height: 200px; /* Minimum height for graphs */
-    display: flex; /* Center the canvas */
-    justify-content: center;
+    flex: 1;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    min-height: 200px; /* Ensure minimum height */
+    max-width: 100%;
+    object-fit: contain;
 }
 
 #canvas-container canvas {
@@ -283,10 +305,62 @@ body.graph-maximized #graph-hint { display: none; }
     flex-direction: row;
   }
   #info-panel {
+    width: 50%;
     max-width: 50%;
-    border-bottom: none;
     border-right: 2px solid #ccc;
+    border-bottom: none;
   }
+  #graph-panel-container {
+        flex: 1;
+    }
+}
+
+@media screen and (max-height: 450px) and (orientation: landscape) {
+    .input-section {
+        margin-bottom: 10px;
+    }
+    
+    .input-container {
+        margin-bottom: 5px;
+    }
+    
+    h1 {
+        margin-top: 0.3em;
+        margin-bottom: 0.3em;
+        font-size: 1.4em;
+    }
+    
+    h2 {
+        margin-top: 0.3em;
+        margin-bottom: 0.3em;
+        font-size: 1.1em;
+    }
+    
+    /* Tighten up spacing for small screens */
+    hr {
+        margin: 10px 0;
+    }
+    
+    .formula-block {
+        margin: 5px 0 10px 10px;
+    }
+}
+
+/* iOS-specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* iOS-only CSS */
+    @media screen and (orientation: landscape) {
+        #info-panel, #graph-panel-container {
+            /* Fix for iOS Safari in landscape which has issues with height */
+            height: -webkit-fill-available;
+        }
+        
+        /* Ensure the p5.js canvas is visible */
+        #canvas-container canvas {
+            width: auto !important;
+            max-height: calc(100% - 10px) !important;
+        }
+    }
 }
 
 /* Media query for layout control */

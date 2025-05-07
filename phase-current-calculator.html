@@ -66,7 +66,6 @@
 /* General styles */
 html, body {
             overscroll-behavior: none;
-            -webkit-overflow-scrolling: none;
 }  
 
 body {
@@ -115,6 +114,7 @@ hr {
     overflow-y: auto; /* Allow scrolling if content doesn't fit */
     border-right: 2px solid #ccc; /* Separator in horizontal mode */
     flex-shrink: 0; /* Do not shrink the panel */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Graph panel */
@@ -125,6 +125,7 @@ hr {
     padding: 10px;
     background-color: #e9e9e9; /* Light background for the graph area */
     min-width: 0; /* Allows the panel to shrink */
+    -webkit-overflow-scrolling: touch;
 }
 
 #canvas-container {
@@ -148,6 +149,8 @@ hr {
     padding-top: 5px;
 }
 
+
+
 /* --- Panel Layout --- */
 #app-container.layout-horizontal {
     flex-direction: row;
@@ -159,6 +162,7 @@ hr {
     border-right: 2px solid #ccc;
     border-bottom: none;
     overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
 }
 #app-container.layout-vertical {
     flex-direction: column;
@@ -172,6 +176,8 @@ hr {
 #graph-panel-container.layout-vertical {
      min-height: 400px; 
      height: 60vh; 
+     overflow-y: auto; 
+     -webkit-overflow-scrolling: touch;
 }
 
 
@@ -299,6 +305,7 @@ body.graph-maximized #graph-hint { display: none; }
     #graph-panel-container {
         min-height: 350px; 
         height: 50vh; 
+        -webkit-overflow-scrolling: touch;
     }
     .input-container label {
         min-width: 100px; 

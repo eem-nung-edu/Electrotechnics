@@ -2,7 +2,7 @@
 <html lang="uk"> 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
   
@@ -271,6 +271,18 @@ select {
 /* Class for hiding inputs when the graph is maximized */
 body.graph-maximized .input-container { visibility: hidden; }
 body.graph-maximized #graph-hint { display: none; }
+
+
+@media (orientation: landscape) {
+  #app-container {
+    flex-direction: row;
+  }
+  #info-panel {
+    max-width: 50%;
+    border-bottom: none;
+    border-right: 2px solid #ccc;
+  }
+}
 
 /* Media query for layout control */
 @media (max-width: 768px) { 

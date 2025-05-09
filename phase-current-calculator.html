@@ -46,8 +46,11 @@
         }
     </script>
   
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Конфігурація MathJax -->
     <script>
-      MathJax = {
+      window.MathJax = {
         tex: {
           inlineMath: [['$', '$'], ['\\(', '\\)']],
           displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -58,8 +61,12 @@
         }
       };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    
+    <!-- MathJax через defer + ререндер після завантаження -->
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+            onload="window.MathJax && MathJax.typeset()"></script>
+    
+
     
   
 <style>
@@ -539,6 +546,8 @@ body.graph-maximized #graph-hint { display: none; }
             </div>
         </div>
     </div>
+    <!-- p5.js через defer -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
 
 
     <script>

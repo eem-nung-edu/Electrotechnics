@@ -32,6 +32,25 @@
             display: block; 
             /* touch-action: manipulation; */
             -webkit-overflow-scrolling: touch;
+            /* Для WebKit/Blink браузерів (Chrome, Safari, Opera) */
+            -webkit-user-select: none;
+
+            /* Для Mozilla Firefox */
+            -moz-user-select: none;
+
+            /* Для Internet Explorer/Edge (старіші версії) */
+            -ms-user-select: none;
+
+            /* Стандартна властивість */
+            user-select: none;
+
+            /* Для Safari на iOS, щоб запобігти виділенню при довгому натисканні
+            і появі контекстного меню (копіювати, подивитися тощо) */
+            -webkit-touch-callout: none;
+
+            /*Для запобігання "підсвічування" при натисканні */
+            -webkit-tap-highlight-color: transparent;
+
 
             
         }

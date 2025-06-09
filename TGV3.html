@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Визначення браузера Telegram</title>
+    <title>Визначення браузера Telegram v3</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -27,7 +27,7 @@
         }
         .results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
         }
         .check-card {
@@ -107,7 +107,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Визначення браузера Telegram</h1>
+        <h1>Визначення браузера Telegram (v3)</h1>
         <p>Ця сторінка аналізує властивості браузера, щоб визначити, чи відкрита вона у вбудованому переглядачі Telegram.</p>
 
         <div id="final-result"></div>
@@ -125,110 +125,94 @@
     </div>
 
     <script>
+        // --- ДОПОМІЖНА ФУНКЦІЯ ДЛЯ ПЕРЕВІРКИ FULLSCREEN ---
+        function isFullscreenPossible() {
+            return !!(
+                document.fullscreenEnabled ||
+                document.webkitFullscreenEnabled ||
+                document.mozFullScreenEnabled ||
+                document.msFullscreenEnabled
+            );
+        }
+
         function runChecks() {
             const resultsContainer = document.getElementById('results-container');
             resultsContainer.innerHTML = '';
             
-            const checks = [
+            const checks = {
                 // Прямі методи (надійні для Web Apps)
-                {
-                    name: 'userAgent',
-                    description: 'Перевірка наявності "Telegram" у рядку User Agent.',
+                userAgent: {
+                    description: 'Перевірка "Telegram" в User Agent. (Надійно, але рідко)',
                     test: () => /Telegram/i.test(navigator.userAgent)
                 },
-                {
-                    name: 'webAppObject',
-                    description: 'Перевірка існування глобального об\'єкту `window.Telegram.WebApp`. (Тільки для Web Apps)',
+                webAppObject: {
+                    description: 'Існування `window.Telegram.WebApp`. (Надійно, тільки для Web Apps)',
                     test: () => !!(window.Telegram && window.Telegram.WebApp)
                 },
-                {
-                    name: 'webviewProxy',
-                    description: 'Перевірка наявності застарілого `window.TelegramWebviewProxy`.',
-                    test: () => typeof window.TelegramWebviewProxy !== 'undefined'
-                },
-                {
-                    name: 'urlParams',
-                    description: 'Перевірка URL на наявність параметрів, специфічних для Web Apps (`tgWebApp...`).',
-                    test: () => {
-                        const params = new URLSearchParams(window.location.search);
-                        return ['tgWebAppVersion', 'tgWebAppData', 'tgWebAppThemeParams', 'tgWebAppPlatform'].some(p => params.has(p));
-                    }
-                },
-                {
-                    name: 'themeParams',
-                    description: 'Перевірка доступу до параметрів теми Telegram. (Тільки для Web Apps)',
-                    test: () => !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.themeParams && Object.keys(window.Telegram.WebApp.themeParams).length > 0)
+                urlParams: {
+                    description: 'URL містить `tgWebApp...` параметри. (Надійно, тільки для Web Apps)',
+                    test: () => new URLSearchParams(window.location.search).has('tgWebAppData')
                 },
 
                 // Евристичні методи (для звичайних посилань)
-                {
-                    name: 'historyLength',
-                    description: 'Довжина історії сесії <= 2. Часто вказує на вбудований браузер.',
-                    test: () => window.history.length <= 2
-                },
-                {
-                    name: 'noWindowOpener',
-                    description: 'Властивість `window.opener` відсутня (`null`), оскільки вікно не було відкрито іншим вікном.',
-                    test: () => !window.opener
-                },
-                {
-                    name: 'viewportHeuristic',
-                    description: 'Співвідношення висоти viewport до висоти екрана < 0.9. Вказує на панелі додатку.',
-                    test: () => (window.innerHeight / screen.height) < 0.9 && window.innerWidth === screen.width
-                },
-                {
-                    name: 'noPaymentRequest',
-                    description: 'Відсутність API для платіжних запитів (`PaymentRequest`).',
+                noPaymentRequest: {
+                    description: 'Відсутність Payment API. (Надійний індикатор)',
                     test: () => typeof window.PaymentRequest === 'undefined'
                 },
-                {
-                    name: 'postMessageSupport',
-                    description: 'Перевірка наявності `window.parent.postMessage`. Вбудовані WebView її мають.',
-                    
-                    test: () => {
-                        try {
-                            return !!window.parent.postMessage;
-                        } catch (e) {
-                            return false; // Помилка доступу до cross-origin frame, що теж є ознакою
-                        }
-                    }
+                // НОВИЙ ТЕСТ
+                noFullscreenAPI: {
+                    description: 'Відсутність Fullscreen API. (Надійний індикатор, часто заблоковано у WebView)',
+                    test: () => !isFullscreenPossible()
+                },
+                historyLength: {
+                    description: 'Довжина історії сесії <= 2. (Показово, але ненадійно окремо)',
+                    test: () => window.history.length <= 2
+                },
+                 viewportHeuristic: {
+                    description: 'Співвідношення висоти viewport до екрана < 0.9. (Ненадійно, може спрацювати в Chrome)',
+                    test: () => (window.innerHeight / screen.height) < 0.9 && window.innerWidth === screen.width
+                },
+                noWindowOpener: {
+                    description: '`window.opener` відсутня. (Ненадійно, залежить від способу відкриття)',
+                    test: () => !window.opener
                 }
-            ];
-
-            let positiveChecks = 0;
-            let webAppChecks = 0;
+            };
             
-            checks.forEach(check => {
-                const result = check.test();
-                if (result) {
-                   positiveChecks++;
-                   if(['webAppObject', 'urlParams', 'themeParams'].includes(check.name)) {
-                       webAppChecks++;
-                   }
-                }
-                
+            const results = {};
+            for (const key in checks) {
+                results[key] = checks[key].test();
+            }
+
+            // Рендеринг результатів
+            for (const key in results) {
+                const result = results[key];
                 const card = document.createElement('div');
                 card.className = `check-card ${result}`;
                 card.innerHTML = `
-                    <div class="status">${check.name}: ${result}</div>
-                    <div class="description">${check.description}</div>
+                    <div class="status">${key}: ${result}</div>
+                    <div class="description">${checks[key].description}</div>
                 `;
                 resultsContainer.appendChild(card);
-            });
-
-            // Фінальний вердикт
-            const finalResultDiv = document.getElementById('final-result');
-            if (webAppChecks > 0) {
-                 finalResultDiv.className = 'final-result positive';
-                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Сторінка відкрита як <b>Telegram Web App</b>.';
-            } else if (positiveChecks >= 3) { // Поріг для евристики
-                 finalResultDiv.className = 'final-result positive';
-                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Висока ймовірність, що це вбудований браузер <b>Telegram</b> (на основі евристичних даних).';
-            } else {
-                 finalResultDiv.className = 'final-result negative';
-                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Схоже, це звичайний браузер, не Telegram.';
             }
 
+
+            // --- ОНОВЛЕНА ЛОГІКА ФІНАЛЬНОГО ВЕРДИКТУ ---
+            const finalResultDiv = document.getElementById('final-result');
+            const isWebApp = results.webAppObject || results.urlParams || results.userAgent;
+            
+            // Ключова комбінація для евристики: вимагаємо збігу трьох надійних індикаторів
+            const isHeuristicMatch = results.noPaymentRequest && results.noFullscreenAPI && results.historyLength;
+
+            if (isWebApp) {
+                 finalResultDiv.className = 'final-result positive';
+                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Сторінка відкрита як <b>Telegram Web App</b>.';
+            } else if (isHeuristicMatch) {
+                 finalResultDiv.className = 'final-result positive';
+                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Висока ймовірність, що це вбудований браузер <b>Telegram</b> (на основі комбінації евристичних даних).';
+            } else {
+                 finalResultDiv.className = 'final-result negative';
+                 finalResultDiv.innerHTML = '<b>Вердикт:</b> Схоже, це <b>звичайний мобільний браузер</b> (Chrome, Safari тощо).';
+            }
 
             // Заповнення debug інформації
             const debugInfo = document.getElementById('debug-info');
@@ -237,15 +221,13 @@ User Agent: ${navigator.userAgent}
 URL: ${window.location.href}
 URL параметри: ${window.location.search || '[]'}
 window.Telegram: ${window.Telegram ? JSON.stringify(Object.keys(window.Telegram)) : 'undefined'}
-Telegram WebApp: ${!!(window.Telegram && window.Telegram.WebApp)}
-Telegram.WebApp.themeParams: ${window.Telegram && window.Telegram.WebApp ? JSON.stringify(window.Telegram.WebApp.themeParams) : 'N/A'}
-TelegramWebviewProxy: ${typeof window.TelegramWebviewProxy}
 Історія сесії (length): ${window.history.length}
 window.opener: ${window.opener === null ? 'null' : 'exists'}
 Розміри (innerWidth/innerHeight): ${window.innerWidth} / ${window.innerHeight}
 Екран (width/height): ${screen.width} / ${screen.height}
 Співвідношення висоти: ${(window.innerHeight / screen.height).toFixed(3)}
 Підтримка PaymentRequest: ${typeof window.PaymentRequest}
+Підтримка Fullscreen API: ${isFullscreenPossible()}
             `;
         }
 
@@ -254,7 +236,6 @@ window.opener: ${window.opener === null ? 'null' : 'exists'}
             debugSection.style.display = debugSection.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Запускаємо перевірку при завантаженні сторінки
         window.addEventListener('load', runChecks);
     </script>
 </body>

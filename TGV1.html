@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визначення браузера Telegram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Визначення браузера Telegram</h1>
+        
+        <div id="results"></div>
+        
+        <button onclick="runDetection()">Запустити перевірку</button>
+        <button onclick="showDebugInfo()">Показати детальну інформацію</button>
+        
+        <div id="debug-info" style="display: none;"></div>
+    </div>
+
+    <script>
+        function detectTelegram() {
+            const results = {
+                isTelegram: false,
+                checks: {},
+                debugInfo: {}
+            };
+
+            try {
+                // Отримуємо основну інформацію
+                const userAgent = navigator.userAgent || navigator.vendor || window.opera || '';
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                // Збираємо debug інформацію
+                results.debugInfo.userAgent = userAgent;
+                results.debugInfo.url = window.location.href;
+                results.debugInfo.urlParams = Array.from(urlParams.entries());
+                results.debugInfo.windowTelegram = typeof window.Telegram;
+                results.debugInfo.telegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
+                results.debugInfo.telegramWebviewProxy = typeof window.TelegramWebviewProxy;
+
+                // Перевірка 1: User Agent
+                results.checks.userAgent = /Telegram/i.test(userAgent);
+                
+                // Перевірка 2: Telegram WebApp об'єкт
+                results.checks.webAppObject = !!(window.Telegram && window.Telegram.WebApp);
+                
+                // Перевірка 3: TelegramWebviewProxy
+                results.checks.webviewProxy = typeof window.TelegramWebviewProxy !== 'undefined';
+                
+                // Перевірка 4: URL параметри Telegram
+                results.checks.urlParams = urlParams.has('tgWebAppVersion') || 
+                                         urlParams.has('tgWebAppPlatform') ||
+                                         urlParams.has('tgWebAppThemeParams') ||
+                                         urlParams.has('tgWebAppData');
+                
+                // Перевірка 5: Додаткові ознаки Telegram
+                results.checks.additionalChecks = {
+                    hasWebAppData: urlParams.has('tgWebAppData'),
+                    hasWebAppStartParam: urlParams.has('tgWebAppStartParam'),
+                    hasWebAppShowSettings: !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showSettings),
+                    hasWebAppClose: !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close)
+                };
+
+                // Фінальне рішення
+                results.isTelegram = results.checks.userAgent || 
+                                   results.checks.webAppObject || 
+                                   results.checks.webviewProxy || 
+                                   results.checks.urlParams;
+
+                // Встановлюємо глобальну змінну
+                window.isTelegram = results.isTelegram;
+                
+            } catch (error) {
+                results.error = error.message;
+                results.isTelegram = /Telegram/i.test(navigator.userAgent || '');
+                window.isTelegram = results.isTelegram;
+            }
+
+            return results;
+        }
+
+        function runDetection() {
+            const results = detectTelegram();
+            const resultsDiv = document.getElementById('results');
+            
+            let html = '';
+            
+            // Основний результат
+            if (results.isTelegram) {
+                html += '<div class="result success"><h3>✓ Це браузер Telegram!</h3></div>';
+            } else {
+                html += '<div class="result error"><h3>✗ Це НЕ браузер Telegram</h3></div>';
+            }
+            
+            // Результати окремих перевірок
+            html += '<h4>Результати перевірок:</h4>';
+            
+            Object.entries(results.checks).forEach(([check, result]) => {
+                if (typeof result === 'object') {
+                    html += `<div class="result info"><strong>${check}:</strong><br>`;
+                    Object.entries(result).forEach(([subCheck, subResult]) => {
+                        html += `${subCheck}: ${subResult ? '✓' : '✗'}<br>`;
+                    });
+                    html += '</div>';
+                } else {
+                    const className = result ? 'success' : 'error';
+                    const icon = result ? '✓' : '✗';
+                    html += `<div class="result ${className}">${icon} ${check}: ${result}</div>`;
+                }
+            });
+            
+            if (results.error) {
+                html += `<div class="result error"><strong>Помилка:</strong> ${results.error}</div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function showDebugInfo() {
+            const results = detectTelegram();
+            const debugDiv = document.getElementById('debug-info');
+            
+            let debugText = 'Debug інформація:\n\n';
+            debugText += `User Agent: ${results.debugInfo.userAgent}\n`;
+            debugText += `URL: ${results.debugInfo.url}\n`;
+            debugText += `URL параметри: ${JSON.stringify(results.debugInfo.urlParams, null, 2)}\n`;
+            debugText += `window.Telegram: ${results.debugInfo.windowTelegram}\n`;
+            debugText += `Telegram WebApp: ${results.debugInfo.telegramWebApp}\n`;
+            debugText += `TelegramWebviewProxy: ${results.debugInfo.telegramWebviewProxy}\n`;
+            debugText += `\nВсі доступні URL параметри:\n`;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.forEach((value, key) => {
+                debugText += `${key}: ${value}\n`;
+            });
+            
+            debugDiv.innerHTML = `<div class="debug-info">${debugText}</div>`;
+            debugDiv.style.display = 'block';
+        }
+
+        // Автоматично запускаємо при завантаженні
+        window.addEventListener('load', function() {
+            runDetection();
+        });
+
+        // Також можна перевірити готовність Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+        }
+    </script>
+</body>
+</html>
